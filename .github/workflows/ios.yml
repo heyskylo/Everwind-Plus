@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -109,6 +109,22 @@ jobs:
           path: artifacts/Everwind.ipa
           if-no-files-found: error
           retention-days: 14
+
+      # Publishes (or updates) a "latest" release with a stable asset URL that
+      # the VPS pulls from:
+      #   https://github.com/heyskylo/Everwind-Plus/releases/latest/download/Everwind.ipa
+      - name: Publish release (latest)
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Everwind (latest build)
+          body: |
+            Automated build from ${{ github.sha }}.
+
+            Install via the sideload repo: https://repo.gayfeet.lol
+          files: artifacts/Everwind.ipa
+          make_latest: true
 
       - name: Upload build logs
         if: always()

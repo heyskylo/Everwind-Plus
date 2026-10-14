@@ -1,0 +1,43 @@
+{
+  "name": "Everwind",
+  "identifier": "com.heyskylo.everwind.source",
+  "subtitle": "Unsigned Everwind builds for AltStore & Feather",
+  "description": "Automated builds of Everwind, a minimal SwiftUI app with a UIOnboarding welcome screen. Signed on-device by AltStore, Feather, SideStore or LiveContainer.",
+  "iconURL": "https://repo.gayfeet.lol/icon.png",
+  "website": "https://github.com/heyskylo/Everwind-Plus",
+  "tintColor": "#1C66FF",
+  "featuredApps": [
+    "com.heyskylo.Everwind"
+  ],
+  "apps": [
+    {
+      "name": "Everwind",
+      "bundleIdentifier": "com.heyskylo.Everwind",
+      "developerName": "heyskylo",
+      "subtitle": "Minimal SwiftUI app with a UIOnboarding welcome screen.",
+      "localizedDescription": "Automated builds of Everwind, a minimal SwiftUI app with a UIOnboarding welcome screen. Signed on-device by AltStore, Feather, SideStore or LiveContainer.",
+      "iconURL": "https://repo.gayfeet.lol/icon.png",
+      "tintColor": "#1C66FF",
+      "category": "other",
+      "screenshots": [],
+      "appPermissions": {},
+      "versions": [
+        {
+          "version": "1.0",
+          "buildVersion": "1",
+          "date": "2026-10-14T15:17:30Z",
+          "localizedDescription": "Automated build 1.0 (1).",
+          "downloadURL": "https://repo.gayfeet.lol/Everwind.ipa",
+          "size": 239952,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0",
+      "versionDate": "2026-10-14T15:17:30Z",
+      "versionDescription": "Automated build 1.0 (1).",
+      "downloadURL": "https://repo.gayfeet.lol/Everwind.ipa",
+      "size": 239952
+    }
+  ],
+  "news": []
+}

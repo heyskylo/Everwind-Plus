@@ -13,7 +13,35 @@ powered by [UIOnboarding](https://github.com/lascic/UIOnboarding).
   - `UIOnboardingHelper.swift` — builds the onboarding configuration (SF Symbols)
   - `Assets.xcassets` — App Icon (1024×1024) and accent color
 - `Everwind.xcodeproj` — Xcode project (Swift Package Manager dependency on UIOnboarding 2.0.5)
-- `.github/workflows/ios.yml` — CI: builds for the iOS Simulator and packages an unsigned `.ipa`
+- `.github/workflows/ios.yml` — CI: builds for the iOS Simulator, packages an unsigned `.ipa`, and publishes it to the `latest` GitHub Release
+- `site/` — the AltStore/Feather source served at <https://repo.gayfeet.lol>
+  - `index.html` — landing page with "Add to AltStore / SideStore / Feather / LiveContainer" buttons
+  - `icon.png` — app icon for the source listing
+  - `apps.json` — the AltStore source document (regenerated on the VPS) 
+- `scripts/generate_source.py` — builds `apps.json` from a compiled `.ipa`
+- `scripts/vps-sync.sh` — VPS-side sync (installed as `/usr/local/bin/everwind-sync.sh`)
+
+## Sideload repo (self-hosted on the VPS)
+
+- **Domain:** <https://repo.gayfeet.lol> → `192.95.29.190`, served by **Caddy** from `/srv/repo.gayfeet.lol`.
+- **Source URL:** `https://repo.gayfeet.lol/apps.json`
+- **App:** `https://repo.gayfeet.lol/Everwind.ipa`
+
+CI publishes every successful build to the `latest` GitHub Release. A systemd
+timer on the VPS (`everwind-sync.timer`, every 2 minutes) runs
+`everwind-sync.service`, which:
+
+1. fast-forwards a clone of this repo at `/opt/everwind`,
+2. downloads the newest release IPA to `/var/lib/everwind/Everwind.ipa`,
+3. regenerates `site/apps.json` from that IPA,
+4. rsyncs `site/` + the IPA into `/srv/repo.gayfeet.lol`.
+
+Trigger a sync manually:
+
+```sh
+sudo systemctl start everwind-sync.service
+journalctl -u everwind-sync.service -n 30 --no-pager
+```
 
 ## Requirements
 
