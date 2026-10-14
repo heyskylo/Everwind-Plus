@@ -73,8 +73,11 @@ else
 fi
 
 # 4. Publish site files to the Caddy docroot, then drop in the IPAs.
+#    /assets/ is excluded: it holds the runtime asset pack that the iOS CI
+#    downloads at build time and is managed out-of-band, so the mirror
+#    must not delete it.
 install -d -o caddy -g caddy -m 0755 "$SERVE_DIR"
-rsync -a --delete --chown=caddy:caddy --chmod=D755,F644 "$SITE/" "$SERVE_DIR/"
+rsync -a --delete --exclude=/assets/ --chown=caddy:caddy --chmod=D755,F644 "$SITE/" "$SERVE_DIR/"
 if [ -f "$CACHE_IPA" ]; then
 	install -o caddy -g caddy -m 0644 "$CACHE_IPA" "$SERVE_DIR/Everwind.ipa"
 fi
