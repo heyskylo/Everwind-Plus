@@ -14,6 +14,8 @@
 		AA00000000000000000001B5 /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = AA00000000000000000008E2 /* UIOnboarding */; };
 		AA00000000000000000001B6 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000002F5 /* RootView.swift */; };
 		AA00000000000000000001B7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000002F6 /* Assets.xcassets */; };
+		AA00000000000000000001B8 /* V86WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000002F7 /* V86WebView.swift */; };
+		AA00000000000000000001B9 /* V86Assets in Resources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000002F8 /* V86Assets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +26,8 @@
 		AA00000000000000000002F4 /* UIOnboardingHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIOnboardingHelper.swift; sourceTree = "<group>"; };
 		AA00000000000000000002F5 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		AA00000000000000000002F6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA00000000000000000002F7 /* V86WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V86WebView.swift; sourceTree = "<group>"; };
+		AA00000000000000000002F8 /* V86Assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = V86Assets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +58,8 @@
 				AA00000000000000000002F3 /* OnboardingView.swift */,
 				AA00000000000000000002F4 /* UIOnboardingHelper.swift */,
 				AA00000000000000000002F5 /* RootView.swift */,
+				AA00000000000000000002F7 /* V86WebView.swift */,
+				AA00000000000000000002F8 /* V86Assets */,
 				AA00000000000000000002F6 /* Assets.xcassets */,
 			);
 			path = Everwind;
@@ -132,6 +138,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA00000000000000000001B7 /* Assets.xcassets in Resources */,
+				AA00000000000000000001B9 /* V86Assets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,6 +154,7 @@
 				AA00000000000000000001B3 /* OnboardingView.swift in Sources */,
 				AA00000000000000000001B6 /* RootView.swift in Sources */,
 				AA00000000000000000001B1 /* EverwindApp.swift in Sources */,
+				AA00000000000000000001B8 /* V86WebView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

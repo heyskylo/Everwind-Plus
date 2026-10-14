@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Tiny Core Linux</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  #screen_container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  #screen_container > div {
+    white-space: pre;
+    font: 14px monospace;
+    line-height: 14px;
+    color: #0f0;
+  }
+  #screen_container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
+    image-rendering: pixelated;
+    background: #000;
+  }
+  #boot {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e8e8e8;
+    font: 15px -apple-system, system-ui, sans-serif;
+    text-align: center;
+    padding: 24px;
+    background: #000;
+    z-index: 10;
+  }
+  #boot small { display: block; margin-top: 8px; color: #8a8a8a; }
+  /* Hidden field used only to summon the iOS software keyboard. */
+  #kb {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+</style>
+</head>
+<body>
+<div id="boot">Booting Tiny Core Linux&hellip;<small>x86 emulation via v86 &middot; no JIT</small></div>
+
+<div id="screen_container">
+  <div></div>
+  <canvas></canvas>
+</div>
+
+<input id="kb" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false">
+
+<script src="libv86.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var boot = document.getElementById("boot");
+  var container = document.getElementById("screen_container");
+  var kb = document.getElementById("kb");
+
+  function start() {
+    if (typeof V86 === "undefined") {
+      boot.textContent = "v86 runtime failed to load.";
+      return;
+    }
+    try {
+      var emulator = new V86({
+        wasm_path: "v86.wasm",
+        memory_size: 256 * 1024 * 1024,
+        vga_memory_size: 8 * 1024 * 1024,
+        screen_container: container,
+        bios: { url: "seabios.bin" },
+        vga_bios: { url: "vgabios.bin" },
+        cdrom: { url: "TinyCore-11.0.iso" },
+        boot_order: 0x123, // CD -> hard disk -> floppy
+        autostart: true,
+      });
+      window.emulator = emulator;
+
+      emulator.add_listener("emulator-ready", function () {
+        boot.style.display = "none";
+      });
+    } catch (err) {
+      boot.textContent = "Failed to start: " + err;
+    }
+  }
+
+  // Keep the software keyboard available for the guest. v86 listens for key
+  // events on the document, so a focused (hidden) input is enough to make iOS
+  // show its keyboard while still delivering keystrokes to the emulator.
+  function focusKeyboard() { try { kb.focus(); } catch (e) {} }
+  document.addEventListener("touchend", focusKeyboard, { passive: true });
+  document.addEventListener("mouseup", focusKeyboard);
+  kb.addEventListener("input", function () { kb.value = ""; });
+
+  if (document.readyState === "complete") start();
+  else window.addEventListener("load", start);
+})();
+</script>
+</body>
+</html>

@@ -17,3 +17,11 @@ Packages/
 # Artifacts
 artifacts/
 *.ipa
+
+# v86 runtime assets (downloaded by scripts/fetch-v86-assets.sh)
+Everwind/V86Assets/libv86.js
+Everwind/V86Assets/v86.wasm
+Everwind/V86Assets/v86-fallback.wasm
+Everwind/V86Assets/seabios.bin
+Everwind/V86Assets/vgabios.bin
+Everwind/V86Assets/TinyCore-11.0.iso

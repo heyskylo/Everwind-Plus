@@ -30,6 +30,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # v86 is the x86 emulator that lets Everwind boot Tiny Core Linux. It is
+      # ~22 MB of JS/WASM + ISO, so it is downloaded here rather than committed.
+      - name: Cache v86 emulator assets
+        uses: actions/cache@v4
+        with:
+          path: |
+            Everwind/V86Assets/libv86.js
+            Everwind/V86Assets/v86.wasm
+            Everwind/V86Assets/v86-fallback.wasm
+            Everwind/V86Assets/seabios.bin
+            Everwind/V86Assets/vgabios.bin
+            Everwind/V86Assets/TinyCore-11.0.iso
+          key: v86-assets-${{ hashFiles('scripts/fetch-v86-assets.sh') }}
+
+      - name: Fetch v86 emulator assets
+        run: |
+          chmod +x scripts/fetch-v86-assets.sh
+          ./scripts/fetch-v86-assets.sh
+          ls -la Everwind/V86Assets
+
       - name: Select Xcode
         run: |
           sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode_15.3.app || true
@@ -82,6 +102,20 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             | tee build-archive.log | tail -n 60
+
+      - name: Verify v86 assets in app bundle
+        run: |
+          set -euo pipefail
+          APP="build/Everwind.xcarchive/Products/Applications/Everwind.app"
+          echo "Contents of $APP/V86Assets:"
+          find "$APP/V86Assets" -maxdepth 1 -type f -print -exec ls -l {} \;
+          test -f "$APP/V86Assets/index.html"
+          test -f "$APP/V86Assets/libv86.js"
+          test -f "$APP/V86Assets/v86.wasm"
+          test -f "$APP/V86Assets/seabios.bin"
+          test -f "$APP/V86Assets/vgabios.bin"
+          test -f "$APP/V86Assets/TinyCore-11.0.iso"
+          echo "v86 assets OK"
 
       - name: Package unsigned .ipa
         id: package
