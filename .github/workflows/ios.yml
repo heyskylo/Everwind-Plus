@@ -1,0 +1,122 @@
+name: iOS
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build (simulator, unsigned)
+    runs-on: macos-14
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode_15.3.app || true
+          xcodebuild -version
+          swift --version
+
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('Everwind.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+
+      - name: Resolve package dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project Everwind.xcodeproj \
+            -scheme Everwind \
+            -clonedSourcePackagesDirPath SourcePackages
+
+      - name: Show project schemes
+        run: xcodebuild -list -project Everwind.xcodeproj
+
+      - name: Build for iOS Simulator
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Everwind.xcodeproj \
+            -scheme Everwind \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            -clonedSourcePackagesDirPath SourcePackages \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee build-simulator.log | tail -n 60
+
+      - name: Archive (unsigned device build)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project Everwind.xcodeproj \
+            -scheme Everwind \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Everwind.xcarchive \
+            -derivedDataPath build/DerivedData \
+            -clonedSourcePackagesDirPath SourcePackages \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | tee build-archive.log | tail -n 60
+
+      - name: Package unsigned .ipa
+        id: package
+        run: |
+          set -euo pipefail
+          APP_PATH="build/Everwind.xcarchive/Products/Applications/Everwind.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "App bundle not found at $APP_PATH"
+            find build -name '*.app' -type d
+            exit 1
+          fi
+
+          STAGE="$PWD/artifacts"
+          mkdir -p "$STAGE/Payload"
+          cp -R "$APP_PATH" "$STAGE/Payload/"
+          ( cd "$STAGE" && zip -qr "Everwind.ipa" Payload )
+
+          ls -la "$STAGE"
+          echo "ipa_path=$STAGE/Everwind.ipa" >> "$GITHUB_OUTPUT"
+
+      - name: Upload unsigned .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: Everwind-ipa
+          path: artifacts/Everwind.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            build-simulator.log
+            build-archive.log
+          if-no-files-found: warn
+          retention-days: 7
