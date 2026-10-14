@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @State private var showingOnboarding = false
+    /// Setting this back to `false` sends the app to the onboarding screen again.
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
 
     var body: some View {
         NavigationStack {
@@ -14,9 +14,7 @@ struct ContentView: View {
                 Text("Hello, Everwind!")
                     .font(.largeTitle.weight(.bold))
 
-                Text(hasCompletedOnboarding
-                     ? "Onboarding completed."
-                     : "Onboarding not yet completed.")
+                Text("You're through onboarding.")
                     .foregroundStyle(.secondary)
             }
             .padding()
@@ -24,23 +22,12 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        showingOnboarding = true
+                        hasCompletedOnboarding = false
                     } label: {
                         Image(systemName: "repeat")
                     }
                     .accessibilityLabel("Show onboarding again")
                 }
-            }
-            .fullScreenCover(isPresented: $showingOnboarding) {
-                OnboardingView {
-                    hasCompletedOnboarding = true
-                }
-                .ignoresSafeArea()
-            }
-        }
-        .onAppear {
-            if !hasCompletedOnboarding {
-                showingOnboarding = true
             }
         }
     }

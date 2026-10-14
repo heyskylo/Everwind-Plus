@@ -7,9 +7,11 @@ powered by [UIOnboarding](https://github.com/lascic/UIOnboarding).
 
 - `Everwind/` — the app sources
   - `EverwindApp.swift` — `@main` SwiftUI entry point
+  - `RootView.swift` — shows UIOnboarding as the launch screen, then `ContentView`
   - `ContentView.swift` — hello-world screen + "show onboarding again" button
   - `OnboardingView.swift` — bridges UIOnboarding's UIKit view controller into SwiftUI
-  - `UIOnboardingHelper.swift` — builds the onboarding configuration (SF Symbols, no image assets required)
+  - `UIOnboardingHelper.swift` — builds the onboarding configuration (SF Symbols)
+  - `Assets.xcassets` — App Icon (1024×1024) and accent color
 - `Everwind.xcodeproj` — Xcode project (Swift Package Manager dependency on UIOnboarding 2.0.5)
 - `.github/workflows/ios.yml` — CI: builds for the iOS Simulator and packages an unsigned `.ipa`
 
@@ -49,7 +51,11 @@ cp -R build/Everwind.xcarchive/Products/Applications/Everwind.app artifacts/Payl
 
 ## Onboarding
 
-The welcome screen is shown once on first launch (tracked with the
-`hasCompletedOnboarding` `UserDefaults` key) and can be re-opened from the
-toolbar. It is **not** the system launch screen — the launch screen is generated
-from `INFOPLIST_KEY_UILaunchScreen_Generation`.
+The app opens **directly into the UIOnboarding welcome screen** (`RootView`).
+Tapping "Continue" transitions to `ContentView` and records completion in the
+`hasCompletedOnboarding` `UserDefaults` key. The toolbar button on `ContentView`
+resets that key to replay the onboarding.
+
+There is also a plain system launch screen (generated from
+`INFOPLIST_KEY_UILaunchScreen_Generation`) that flashes briefly before SwiftUI
+renders — the animated onboarding itself cannot be the OS-level launch screen.
