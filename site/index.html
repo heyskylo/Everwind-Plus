@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Everwind — AltStore / Feather Source</title>
-<meta property="og:title" content="Everwind">
-<meta property="og:description" content="Unsigned Everwind builds for AltStore, Feather, SideStore & LiveContainer.">
+<title>heyskylo — Sideload Repo</title>
+<meta property="og:title" content="heyskylo">
+<meta property="og:description" content="Unsigned builds for AltStore, Feather, SideStore & LiveContainer.">
 <meta property="og:image" content="/icon.png">
 <style>
   :root { --tint: #1c66ff; --bg: #0b1020; --card: #151b30; --text: #eef1f8; --muted: #9aa4c0; }
@@ -40,21 +40,15 @@
 <body>
 <div class="wrap">
   <div class="hero">
-    <img src="/icon.png" alt="Everwind icon">
+    <img src="/icon.png" alt="repo icon">
     <div>
-      <h1>Everwind</h1>
-      <p class="sub">Minimal SwiftUI app with a UIOnboarding welcome screen.<br>Unsigned builds — signed on-device.</p>
+      <h1>heyskylo</h1>
+      <p class="sub">Unsigned builds — signed on-device by<br>AltStore, Feather, SideStore or LiveContainer.</p>
     </div>
   </div>
 
-  <div class="card">
-    <div class="row">
-      <div class="meta">
-        <strong id="app-name">Everwind</strong>
-        <span id="app-version">loading…</span>
-      </div>
-      <a class="btn primary" id="ipa-link" href="/Everwind.ipa" download>Download IPA</a>
-    </div>
+  <div class="card" id="apps">
+    <div class="row"><div class="meta"><strong>loading…</strong><span></span></div></div>
   </div>
 
   <h2>Add to your sideloader</h2>
@@ -98,12 +92,17 @@
   fetch("/apps.json", { cache: "no-store" })
     .then(r => r.json())
     .then(data => {
-      const app = (data.apps || [])[0];
-      if (!app) return;
-      const v = app.version || (app.versions && app.versions[0] && app.versions[0].version) || "";
-      document.getElementById("app-name").textContent = app.name || "Everwind";
-      document.getElementById("app-version").textContent =
-        "Version " + v + " · " + (app.bundleIdentifier || "");
+      const apps = data.apps || [];
+      const host = document.getElementById("apps");
+      if (!apps.length) return;
+      host.innerHTML = apps.map(app => {
+        const v = app.version || (app.versions && app.versions[0] && app.versions[0].version) || "";
+        const url = app.downloadURL || (app.versions && app.versions[0] && app.versions[0].downloadURL) || "";
+        return '<div class="row">' +
+          '<div class="meta"><strong>' + (app.name || "App") + '</strong>' +
+          '<span>Version ' + v + ' · ' + (app.bundleIdentifier || "") + '</span></div>' +
+          '<a class="btn primary" href="' + url + '" download>Download IPA</a></div>';
+      }).join("");
     })
     .catch(() => {});
 </script>
