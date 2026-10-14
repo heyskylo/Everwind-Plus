@@ -117,3 +117,16 @@ The emulator assets are **not committed** — `scripts/fetch-v86-assets.sh`
 downloads them into `Everwind/V86Assets/`, and that directory is bundled into the
 app as a folder reference. A `WKURLSchemeHandler` serves them over
 `everwind://local/…`, because `WKWebView` blocks `fetch()` against `file://` URLs.
+
+### Interacting
+
+- **Pointer:** v86 listens for `touchstart/move/end` on `window`, so a finger drag
+  moves the guest pointer. The canvas keeps its exact aspect ratio so v86's
+  `getBoundingClientRect()` coordinate mapping stays correct. Because v86 sends
+  pointer movement as raw CSS-pixel deltas, the pointer tracks your finger best
+  when the guest resolution is close to the on-screen canvas size.
+- **Keyboard:** a hidden `<input>` is focused on tap, which makes iOS show its
+  software keyboard; v86 reads keystrokes from `window` keydown/`input` events.
+  A Bluetooth keyboard works too.
+- **Controls:** the ✕ closes the VM and the ↻ restarts it (a fresh boot; the two
+  buttons sit in the top-right corner).
