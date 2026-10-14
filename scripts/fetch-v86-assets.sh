@@ -60,4 +60,18 @@ download "$GH/bios/vgabios.bin"         "vgabios.bin"        30000
 echo "==> Fetching Tiny Core Linux (x86) live ISO"
 download "https://i.copy.sh/TinyCore-11.0.iso" "TinyCore-11.0.iso" 10000000
 
+# We boot the kernel directly (v86's bzimage/initrd options) instead of letting
+# isolinux run, because the ISO's boot menu waits 60 seconds and gives us no way
+# to set the Xvesa resolution. The CD stays attached so Tiny Core's `cde` boot
+# code can still load the X/GUI extensions from it.
+PYTHON="$(command -v python3 || command -v python || true)"
+if [[ -z "$PYTHON" ]]; then
+    echo "ERROR: python3 is required to extract the kernel from the ISO" >&2
+    exit 1
+fi
+
+echo "==> Extracting kernel + initramfs from the ISO"
+"$PYTHON" "$ROOT/scripts/iso-extract.py" "$DEST/TinyCore-11.0.iso" /boot/vmlinuz "$DEST/vmlinuz"
+"$PYTHON" "$ROOT/scripts/iso-extract.py" "$DEST/TinyCore-11.0.iso" /boot/core.gz "$DEST/core.gz"
+
 echo "==> Done. Bundled assets in Everwind/V86Assets/"

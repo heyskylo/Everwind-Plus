@@ -25,3 +25,5 @@ Everwind/V86Assets/v86-fallback.wasm
 Everwind/V86Assets/seabios.bin
 Everwind/V86Assets/vgabios.bin
 Everwind/V86Assets/TinyCore-11.0.iso
+Everwind/V86Assets/vmlinuz
+Everwind/V86Assets/core.gz

@@ -42,7 +42,9 @@ jobs:
             Everwind/V86Assets/seabios.bin
             Everwind/V86Assets/vgabios.bin
             Everwind/V86Assets/TinyCore-11.0.iso
-          key: v86-assets-${{ hashFiles('scripts/fetch-v86-assets.sh') }}
+            Everwind/V86Assets/vmlinuz
+            Everwind/V86Assets/core.gz
+          key: v86-assets-${{ hashFiles('scripts/fetch-v86-assets.sh', 'scripts/iso-extract.py') }}
 
       - name: Fetch v86 emulator assets
         run: |
@@ -115,6 +117,8 @@ jobs:
           test -f "$APP/V86Assets/seabios.bin"
           test -f "$APP/V86Assets/vgabios.bin"
           test -f "$APP/V86Assets/TinyCore-11.0.iso"
+          test -f "$APP/V86Assets/vmlinuz"
+          test -f "$APP/V86Assets/core.gz"
           echo "v86 assets OK"
 
       - name: Package unsigned .ipa

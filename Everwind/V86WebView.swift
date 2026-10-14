@@ -70,6 +70,10 @@ final class V86SchemeHandler: NSObject, WKURLSchemeHandler {
 /// v86 translates guest machine code to WebAssembly, which WebKit compiles
 /// ahead of time, so this runs without any JIT entitlement.
 struct V86WebView: UIViewRepresentable {
+    /// When true the guest picture is stretched to fill the whole screen; when
+    /// false it keeps its aspect ratio and is letterboxed.
+    var fillScreen: Bool
+
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
@@ -87,23 +91,36 @@ struct V86WebView: UIViewRepresentable {
         return webView
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {}
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        // No-op until the page has defined the hook.
+        webView.evaluateJavaScript(
+            "window.everwindSetFill && window.everwindSetFill(\(fillScreen ? "true" : "false"))",
+            completionHandler: nil
+        )
+    }
 }
 
 /// Full-screen container for the Tiny Core Linux virtual machine.
 struct VirtualMachineView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var sessionID = UUID()
+    /// iPhone screens are wider than any display mode the guest supports
+    /// (19.5:9 vs 16:9), so filling the screen stretches the picture slightly.
+    /// Filling is the default; the toolbar button switches to exact aspect.
+    @State private var fillScreen = true
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea()
 
-            V86WebView()
+            V86WebView(fillScreen: fillScreen)
                 .id(sessionID)
                 .ignoresSafeArea()
 
             HStack(spacing: 8) {
+                controlButton("aspectratio", label: fillScreen ? "Use exact aspect ratio" : "Fill the screen") {
+                    fillScreen.toggle()
+                }
                 controlButton("arrow.clockwise", label: "Restart") {
                     sessionID = UUID()
                 }
@@ -115,6 +132,14 @@ struct VirtualMachineView: View {
             .padding(.top, 12)
         }
         .statusBarHidden()
+        .onAppear {
+            AppDelegate.orientationLock = .landscape
+            AppDelegate.request(.landscape)
+        }
+        .onDisappear {
+            AppDelegate.orientationLock = nil
+            AppDelegate.request(AppDelegate.unlockedOrientations)
+        }
     }
 
     private func controlButton(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {

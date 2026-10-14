@@ -31,16 +31,24 @@
     line-height: 14px;
     color: #0f0;
   }
-  /* The canvas box must exactly match the rendered image: v86 maps pointer
-     coordinates with getBoundingClientRect(), and inside-the-box letterboxing
-     (object-fit) would offset the pointer. max-width/max-height instead scale
-     the element itself while preserving its aspect ratio. */
+  /* The canvas element's own box must match the rendered image, because v86
+     maps the pointer with getBoundingClientRect(). "fit" scales the whole
+     element while preserving its aspect ratio (thin bars on the long axis);
+     "fill" stretches it to the screen. */
   #screen_container canvas {
     display: block;
+    background: #000;
+    flex: 0 0 auto;
+  }
+  #screen_container canvas.fit {
     max-width: 100%;
     max-height: 100%;
-    image-rendering: pixelated;
-    background: #000;
+  }
+  #screen_container canvas.fill {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none;
+    max-height: none;
   }
   #boot {
     position: absolute;
@@ -86,28 +94,99 @@
   var container = document.getElementById("screen_container");
   var kb = document.getElementById("kb");
 
+  // A resolution that v86's VGA BIOS actually advertises. Xvesa silently
+  // substitutes some unrelated mode (640x480, 800x600, ...) for anything else,
+  // so matching the iPhone's 19.5:9 panel exactly is not possible - 16:9 is the
+  // widest mode available, and 1280x720 is the lightest of those.
+  var GUEST_WIDTH = 1280;
+  var GUEST_HEIGHT = 720;
+
+  var emulator = null;
+  var fillScreen = true;
+
+  function canvas() {
+    return container.getElementsByTagName("canvas")[0];
+  }
+
+  function applyLayout() {
+    var c = canvas();
+    if (!c) return;
+    if (fillScreen) {
+      c.classList.remove("fit");
+      c.classList.add("fill");
+    } else {
+      c.classList.remove("fill");
+      c.classList.add("fit");
+    }
+  }
+
+  // Called from Swift when the "fill screen" toolbar button is toggled.
+  window.everwindSetFill = function (on) {
+    fillScreen = !!on;
+    applyLayout();
+  };
+
+  // v86 forwards raw pointer deltas in CSS pixels without accounting for the
+  // on-screen scale of the canvas, so dragging drifts whenever the picture is
+  // resized (it already did, since the guest is shrunk to fit). Rescale the
+  // deltas so the guest cursor tracks the finger 1:1 in either layout.
+  function fixPointerDeltas(emu) {
+    var bus = emu && emu.bus;
+    if (!bus || typeof bus.send !== "function") return;
+
+    var send = bus.send.bind(bus);
+    bus.send = function (name, args) {
+      if (name === "mouse-delta" && args && args.length === 2) {
+        var c = canvas();
+        if (c && c.width > 0 && c.height > 0) {
+          var rect = c.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            args = [
+              args[0] * c.width / rect.width,
+              args[1] * c.height / rect.height,
+            ];
+          }
+        }
+      }
+      return send(name, args);
+    };
+  }
+
   function start() {
     if (typeof V86 === "undefined") {
       boot.textContent = "v86 runtime failed to load.";
       return;
     }
     try {
-      var emulator = new V86({
+      emulator = new V86({
         wasm_path: "v86.wasm",
         memory_size: 128 * 1024 * 1024,
-        vga_memory_size: 8 * 1024 * 1024,
+        vga_memory_size: 16 * 1024 * 1024,
         screen_container: container,
         bios: { url: "seabios.bin" },
         vga_bios: { url: "vgabios.bin" },
+        // Boot the kernel directly instead of letting the ISO's isolinux menu
+        // run: that menu sits for 60 seconds before picking a default and gives
+        // us no way to choose the Xvesa resolution. The CD is still attached so
+        // the "cde" boot code can load the X/GUI extensions from it.
+        bzimage: { url: "vmlinuz" },
+        initrd: { url: "core.gz" },
         cdrom: { url: "TinyCore-11.0.iso" },
-        boot_order: 0x123, // CD -> hard disk -> floppy
+        cmdline: "loglevel=3 cde xvesa=" + GUEST_WIDTH + "x" + GUEST_HEIGHT + "x24",
+        fastboot: true,
         autostart: true,
       });
       window.emulator = emulator;
 
+      fixPointerDeltas(emulator);
+      applyLayout();
+
       emulator.add_listener("emulator-ready", function () {
         boot.style.display = "none";
+        applyLayout();
       });
+      // The canvas is resized whenever the guest selects a video mode.
+      emulator.add_listener("screen-set-size", applyLayout);
     } catch (err) {
       boot.textContent = "Failed to start: " + err;
     }

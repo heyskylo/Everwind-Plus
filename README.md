@@ -12,7 +12,7 @@ powered by [UIOnboarding](https://github.com/lascic/UIOnboarding).
   - `OnboardingView.swift` — bridges UIOnboarding's UIKit view controller into SwiftUI
   - `UIOnboardingHelper.swift` — builds the onboarding configuration (SF Symbols)
   - `V86WebView.swift` — WKWebView wrapper that boots the bundled x86 emulator
-  - `V86Assets/` — v86 runtime, BIOS, and the Tiny Core Linux ISO (see below; binaries are downloaded, not committed)
+  - `V86Assets/` — v86 runtime, BIOS, the Tiny Core Linux ISO, and the kernel/initramfs extracted from it (see below; binaries are downloaded, not committed)
   - `Assets.xcassets` — App Icon (1024×1024) and accent color
 - `Everwind.xcodeproj` — Xcode project (Swift Package Manager dependency on UIOnboarding 2.0.5)
 - `.github/workflows/ios.yml` — CI: builds for the iOS Simulator, packages an unsigned `.ipa`, and publishes it to the `latest` GitHub Release
@@ -23,6 +23,7 @@ powered by [UIOnboarding](https://github.com/lascic/UIOnboarding).
 - `scripts/generate_source.py` — builds `apps.json` from a compiled `.ipa`
 - `scripts/vps-sync.sh` — VPS-side sync (installed as `/usr/local/bin/everwind-sync.sh`)
 - `scripts/fetch-v86-assets.sh` — downloads the v86 emulator + Tiny Core ISO into `Everwind/V86Assets/`
+- `scripts/iso-extract.py` — stdlib-only ISO9660 file extractor (used to pull the kernel/initramfs out of the ISO)
 
 ## Sideload repo (self-hosted on the VPS)
 
@@ -100,8 +101,9 @@ renders — the animated onboarding itself cannot be the OS-level launch screen.
 ## Tiny Core Linux VM (x86 emulation, no JIT)
 
 The "Boot Tiny Core Linux" button on `ContentView` boots a real x86 PC inside
-the app: SeaBIOS + VGA BIOS + a **Tiny Core Linux 11 live ISO**, running in a
-full-screen `WKWebView`.
+the app: SeaBIOS + VGA BIOS + a **Tiny Core Linux 11** image, running in a
+full-screen `WKWebView`. The VM is shown in landscape, since the guest is a
+desktop OS (the app restricts its orientation while the VM is open).
 
 This uses [v86](https://github.com/copy/v86), which translates guest x86 machine
 code into WebAssembly at runtime. WebKit compiles that WebAssembly ahead of time
@@ -118,15 +120,45 @@ downloads them into `Everwind/V86Assets/`, and that directory is bundled into th
 app as a folder reference. A `WKURLSchemeHandler` serves them over
 `everwind://local/…`, because `WKWebView` blocks `fetch()` against `file://` URLs.
 
+### Booting the kernel directly
+
+The kernel is booted **directly** (v86's `bzimage` / `initrd` / `cmdline`
+options) instead of letting the ISO's isolinux menu run. That menu waits 60
+seconds (`TIMEOUT 600`) before picking a default, and offers no way to choose the
+guest's screen resolution. Bootstrapping the kernel ourselves skips it and lets
+us pass boot codes:
+
+- `cde` — load the X/GUI extensions off the CD, which stays attached for exactly
+  this purpose.
+- `xvesa=1280x720x24` — the guest screen resolution.
+
+`scripts/fetch-v86-assets.sh` pulls `vmlinuz` and `core.gz` out of the ISO with
+`scripts/iso-extract.py`, a small stdlib-only ISO9660 reader — the CI runners are
+macOS and have no `isoinfo`/`7z`/`bsdtar` to extract them with.
+
+### Screen resolution
+
+v86's VGA BIOS advertises only a small fixed set of VESA modes (`1280x720`,
+`1600x900`, `1920x1080`, `1920x1200`, `2560x1440`, `2560x1600`, `320x200`).
+Asking Xvesa for anything outside that list makes it silently substitute an
+unrelated mode (`640x480`, `800x600`, …), so the guest must use a real one. The
+widest aspect available is 16:9, and **1280x720x24** is the lightest of those.
+
+An iPhone 14 panel is 19.5:9, which no VESA mode matches. The `aspectratio`
+toolbar button switches between:
+
+- **fill** (default) — stretch to the whole screen; and
+- **exact** — keep 16:9 with thin bars on the sides.
+
 ### Interacting
 
 - **Pointer:** v86 listens for `touchstart/move/end` on `window`, so a finger drag
-  moves the guest pointer. The canvas keeps its exact aspect ratio so v86's
-  `getBoundingClientRect()` coordinate mapping stays correct. Because v86 sends
-  pointer movement as raw CSS-pixel deltas, the pointer tracks your finger best
-  when the guest resolution is close to the on-screen canvas size.
+  moves the guest pointer. v86 forwards pointer movement as *raw* CSS-pixel
+  deltas, so `index.html` rescales them by the on-screen size of the canvas —
+  otherwise the cursor drifts whenever the picture is scaled (which it always is
+  on a phone screen).
 - **Keyboard:** a hidden `<input>` is focused on tap, which makes iOS show its
   software keyboard; v86 reads keystrokes from `window` keydown/`input` events.
   A Bluetooth keyboard works too.
-- **Controls:** the ✕ closes the VM and the ↻ restarts it (a fresh boot; the two
-  buttons sit in the top-right corner).
+- **Controls:** the aspect-ratio toggle, ↻ (restart with a fresh boot) and ✕
+  (close) sit in the top-right corner.
